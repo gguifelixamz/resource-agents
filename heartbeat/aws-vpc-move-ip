@@ -167,6 +167,7 @@ ec2ip_validate() {
 ec2ip_monitor() {
         MON_RES=""
 	if ocf_is_true ${OCF_RESKEY_monapi} || [ "$__OCF_ACTION" = "start" ] || ocf_is_probe; then
+<<<<<<< HEAD
 		for rtb in $(echo $OCF_RESKEY_routing_table | sed -e 's/,/ /g'); do
 			ocf_log info "monitor: check routing table (API call) - $rtb"
 			cmd="$OCF_RESKEY_awscli --profile $OCF_RESKEY_profile --output text ec2 describe-route-tables --route-table-ids $rtb"
@@ -184,6 +185,19 @@ ec2ip_monitor() {
 		done
 
 		if [ ! -z "$MON_RES" ]; then
+=======
+		ocf_log info "monitor: check routing table (API call)"
+		cmd="$OCF_RESKEY_awscli --profile $OCF_RESKEY_profile --output text ec2 describe-route-tables --route-table-ids $OCF_RESKEY_routing_table --query RouteTables[*].Routes[?DestinationCidrBlock=='$OCF_RESKEY_ip/32'].InstanceId"
+		ocf_log debug "executing command: $cmd"
+		ROUTE_TO_INSTANCE=$($cmd)
+		ocf_log debug "Overlay IP is currently routed to ${ROUTE_TO_INSTANCE}"
+		if [ -z "$ROUTE_TO_INSTANCE" ]; then
+			ROUTE_TO_INSTANCE="<unknown>"
+		fi
+
+		if [ "$EC2_INSTANCE_ID" != "$ROUTE_TO_INSTANCE" ];then 
+			ocf_log warn "not routed to this instance ($EC2_INSTANCE_ID) but to instance $ROUTE_TO_INSTANCE"
+>>>>>>> ffad4ecca3fb84efaa52eee9c2e22c5c054c32c8
 			return $OCF_NOT_RUNNING
 		fi
 
