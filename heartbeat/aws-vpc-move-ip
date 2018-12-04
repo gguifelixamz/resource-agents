@@ -169,9 +169,10 @@ ec2ip_monitor() {
 	if ocf_is_true ${OCF_RESKEY_monapi} || [ "$__OCF_ACTION" = "start" ] || ocf_is_probe; then
 		for rtb in $(echo $OCF_RESKEY_routing_table | sed -e 's/,/ /g'); do
 			ocf_log info "monitor: check routing table (API call) - $rtb"
-			cmd="$OCF_RESKEY_awscli --profile $OCF_RESKEY_profile --output text ec2 describe-route-tables --route-table-ids $rtb"
+			cmd="$OCF_RESKEY_awscli --profile $OCF_RESKEY_profile --output text ec2 describe-route-tables --route-table-ids $rtb --query RouteTables[*].Routes[?DestinationCidrBlock=='$OCF_RESKEY_ip/32'].InstanceId"
 			ocf_log debug "executing command: $cmd"
-			ROUTE_TO_INSTANCE="$($cmd | grep $OCF_RESKEY_ip | awk '{ print $3 }')"
+			ROUTE_TO_INSTANCE="$($cmd)"
+			ocf_log debug "Overlay IP is currently routed to ${ROUTE_TO_INSTANCE}"
 			if [ -z "$ROUTE_TO_INSTANCE" ]; then
 				ROUTE_TO_INSTANCE="<unknown>"
 			fi
@@ -232,8 +233,8 @@ ec2ip_get_and_configure() {
 
 	# Reconfigure the local ip address
 	ec2ip_drop
-        cmd="ip addr add ${OCF_RESKEY_ip}/32 dev $OCF_RESKEY_interface"
-        ocf_log debug "executing command: $cmd"
+	cmd="ip addr add ${OCF_RESKEY_ip}/32 dev $OCF_RESKEY_interface"
+	ocf_log debug "executing command: $cmd"
 	$cmd
 	rc=$?
 	if [ $rc != 0 ]; then
